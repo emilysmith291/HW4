@@ -1,0 +1,160 @@
+{
+  "info": {
+    "name": "WNBA Comp-Finder API",
+    "description": "Health, pipeline info, and valid/invalid POST checks against the deployed Modal API for Assignment 4.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://emilysmith291--wnba-comp-finder-web.modal.run"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": ["{{base_url}}"],
+          "path": ["health"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Reports ok status', function () {",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.status).to.eql('ok');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Pipeline Info",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/info",
+          "host": ["{{base_url}}"],
+          "path": ["info"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Describes a fitted pipeline artifact', function () {",
+              "    const body = pm.response.json();",
+              "    pm.expect(body).to.have.property('steps');",
+              "    pm.expect(body).to.have.property('sklearn_version');",
+              "    pm.expect(body).to.have.property('built_at');",
+              "    pm.expect(body).to.have.property('n_records');",
+              "    pm.expect(body.n_records).to.be.above(0);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Valid Compare (200)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"ppg\": 8,\n  \"rpg\": 2,\n  \"apg\": 1,\n  \"spg\": 1,\n  \"bpg\": 0,\n  \"k\": 5\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/compare",
+          "host": ["{{base_url}}"],
+          "path": ["compare"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Returns ranked comps with distances', function () {",
+              "    const body = pm.response.json();",
+              "    pm.expect(body).to.have.property('comps');",
+              "    pm.expect(body.comps).to.be.an('array').that.is.not.empty;",
+              "    pm.expect(body.comps[0]).to.have.property('player');",
+              "    pm.expect(body.comps[0]).to.have.property('distance');",
+              "});",
+              "",
+              "pm.test('Echoes engineered style features', function () {",
+              "    const body = pm.response.json();",
+              "    pm.expect(body).to.have.property('style');",
+              "    pm.expect(Object.keys(body.style).length).to.be.above(0);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Invalid Compare (422)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"ppg\": 99,\n  \"rpg\": 2,\n  \"apg\": 1,\n  \"spg\": 1,\n  \"bpg\": 0\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/compare",
+          "host": ["{{base_url}}"],
+          "path": ["compare"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 422 for out-of-bounds input', function () {",
+              "    pm.response.to.have.status(422);",
+              "});",
+              "",
+              "pm.test('Response explains the validation failure', function () {",
+              "    const body = pm.response.json();",
+              "    pm.expect(body).to.have.property('detail');",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
